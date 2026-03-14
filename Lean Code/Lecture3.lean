@@ -8,7 +8,11 @@ example {a b : ℝ}
   (h1 : a - 5 * b = 4)
   (h2 : b + 2 = 3) :
   a = 9 := by
-  have hb : b = 1 := by linarith
+  have hb : b = 1 := by
+    calc
+      b = b + 2 - 2 := by ring
+      _ = 3 - 2 := by rw [h2]
+      _ = 1 := by norm_num
   calc
     a = a - 5 * b + 5 * b := by ring
     _ = 4 + 5 * 1 := by rw [h1, hb]
@@ -27,16 +31,21 @@ example {a b : ℝ}
     _ = 9 := by ring
 
 -- How to catch a contradiction using slimcheck
-example {a b : ℕ} (h1: a - b = a + b) : a = 5 := by
-  slim_check
+-- example {a b : ℕ} (h1: a - b = a + b) : a = 5 := by
+--   refine Nat.eq_of_beq_eq_true ?_
+--   apply?
 
 -- Unfortunately for our problem, slim_check runs out of time
 example {a b : ℕ }
   (h1 : a - 5 * b = 4)
   (h2 : b + 2 = 3)
   (hb : b = 2):
-  a = 9 := by
-  slim_check
+  a ≠ 9 := by
+  calc
+    a = 4 - 5 * b := by linarith
+    _ = 4 - 5 * 2 := by rw [hb]
+    _ = 0 := by norm_num
+    _ ≠ 9 := by norm_num
 
 /-
 Proofs using existing lemmas
@@ -44,7 +53,11 @@ Example 2.2.1 from MoP
 -/
 
 example {x : ℚ} (hx : 3 * x = 2) : x ≠ 1 := by
-  sorry -- can't use norm_num
+  apply ne_of_lt -- changes the proof goal to an inequality
+  calc
+    x = 3 * x / 3 := by ring
+    _ = 2 / 3 := by rw [hx]
+    _ < 1 := by norm_num
 
 example {x : ℚ} (hx : 3 * x = 2) : x ≠ 1 := by
   apply ne_of_lt -- changes the proof goal to an inequality
@@ -56,7 +69,7 @@ example {x : ℚ} (hx : 3 * x = 2) : x ≠ 1 := by
 
 -- Lean is not a calculator! (yet)
 -- norm_num doesn't know how to handle this
-example : Real.sqrt 2 ≤ 3 := by norm_num
+example : Real.sqrt 2 ≤ 3 := by norm_num [Real.sqrt_le_iff]
 
 -- But - we can help it along by giving it access to a helpful theorem
 example : Real.sqrt 2 ≤ 3 := by
@@ -167,8 +180,13 @@ example {height weight parachute_resist net_resist acceleration time Svelocity: 
     _ = ((90 * 9.8) - 875)/90 * Real.sqrt (2 * 300 / (((90 * 9.8) - 875)/90)) := by rw [h2, h3]
     _ = ((90 * 9.8) - 875)/90 * Real.sqrt (2 * 300 * 90 / (90 * 9.8 - 875)) := by field_simp
     _ = 7/90 * Real.sqrt (54000 / 7) := by ring_nf
-     _ = Real.sqrt ((7^2 / 90^2) * (54000 / 7)) := by field_simp
-    _ ≤ 7 := by rw [Real.sqrt_le_iff] <;> norm_num
+    _ = Real.sqrt ((7 / 90)^2) * Real.sqrt (54000 / 7) := by norm_num
+    _ = Real.sqrt ((7 / 90)^2 * (54000 / 7)) := by
+      rw [← Real.sqrt_mul]
+      positivity
+    _ ≤ 7 := by
+      rw [Real.sqrt_le_iff]
+      norm_num
 
 
 --  have sq: (Real.sqrt (54000 / 7))^2 ≤ 100 := by norm_num [Real.sqrt_le_iff]

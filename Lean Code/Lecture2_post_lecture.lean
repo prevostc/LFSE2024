@@ -14,7 +14,7 @@ example {x y : ℝ}
 (h1 : 450 = (x + y)*3 )
 (h2 : 450 = (x - y)*5 )
 : x = 120 :=
-by polyrith
+by linarith
 
 -- Simpler way to set up the problem (easier to prove in Lean)
 example {x y : ℝ}
